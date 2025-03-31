@@ -12,6 +12,7 @@ import os
 from config import Config
 import json
 from flask_cors import cross_origin
+import ast
 
 logging.basicConfig(filename='log/app.log', level=logging.INFO)
 
@@ -263,10 +264,10 @@ def update_user_stat(ticket):
         session.close()
 
 # Получение статистики пользователя
-@user_bp.route('/get_ticket_user_ans', methods=['POST'])
+@user_bp.route('/get_ticket_user_ans', methods=['GET'])
 @cross_origin()
 @token_required
-def update_user11_stat():
+def get_user_all_ticket_stats():
     session = Session()
     try:
         token = request.headers.get('Authorization')
@@ -281,23 +282,26 @@ def update_user11_stat():
                 response.append({
                     'id': i+1,
                     'ans': 'None',
-                    'percentages': '0%'
+                    'percentages': 0
                 })
             else:
-                Len = len(res.correct_questions)
-                count = 0
-                valid_json_string = json.replace("'", '"')
-                data = json.loads(valid_json_string)
-                print(data)
-                # for i in res.correct_questions.json():
-                #     print(i)
-                    # if i.ans_correct == True:
-                    #     count+=1
-                # percentages_count = (count / Len) * 100
+                def calculate_correct_percentage(answers: list) -> float:
+                    if not answers:
+                        return 0.0  # Если список пуст, возвращаем 0%
+                    
+                    correct_count = sum(1 for ans in answers if ans["ans_correct"])
+                    total_count = len(answers)
+                    
+                    return (correct_count / total_count) * 100
+                
+                corr_quest = res.correct_questions
+                corr_quest = ast.literal_eval(corr_quest)
+                print(corr_quest)
+                percentage = calculate_correct_percentage(corr_quest)
                 response.append({
                     'id': i+1,
                     'ans': res.correct_questions,
-                    'percentages': 0
+                    'percentages': percentage
                 })
 
         return jsonify({"ans": response}), 200
@@ -305,6 +309,27 @@ def update_user11_stat():
         return jsonify({"error": str(e)}), 500
     finally:
         session.close()
+
+# Получение отдельного билета у пользователя
+@user_bp.route('/get_one_ticket_user_ans/<int:ticket_id>', methods=['GET'])
+@cross_origin()
+@token_required
+def get_user_one_ticket_stats(ticket_id):
+    session = Session()
+    try:
+        token = request.headers.get('Authorization')
+        token_data = decode_token(token)
+        res = session.query(TestResult).filter_by(user_id=token_data['id'], ticket_id=ticket_id).first()
+        if res is None:
+            return jsonify({"error": 'Invalid ticket_id'}), 400
+        else:
+            corr_quest = ast.literal_eval(res.correct_questions)
+        return jsonify({"message": corr_quest}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
 
 # TestController – обработка тестирования, отправка ответов и получение результатов;
 
