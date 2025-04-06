@@ -247,7 +247,7 @@ def get_user_all_ticket_stats():
                 response.append({
                     'id': i+1,
                     'ans': res.correct_questions,
-                    'percentages': round(percentage, 2)
+                    'percentages': int(percentage)
                 })
 
         return jsonify({"ans": response}), 200
@@ -432,19 +432,16 @@ def set_status_post():
 def get_random_questions():
     session = Session()
     try:
-        # Подзапрос: получить 20 уникальных текстов вопросов в случайном порядке
         subquery = (
-            session.query(Question.text)
-            .distinct()
+            session.query(Question.id)
             .order_by(func.random())
             .limit(20)
             .subquery()
         )
 
-        # Основной запрос: получить полные объекты Question с этими текстами
         random_questions = (
             session.query(Question)
-            .join(subquery, Question.text == subquery.c.text)
+            .join(subquery, Question.id == subquery.c.id)
             .all()
         )
         response = []
@@ -490,7 +487,7 @@ def examId():
 #* Занесение статистики пользователя (Экзамен)
 @user_bp.route('/add_exam/<int:examId>', methods=['POST'])
 @token_required
-def update_user_sta1212t(examId):
+def add_exam(examId):
     session = Session()
     try:
         token = request.headers.get('Authorization')
@@ -503,12 +500,12 @@ def update_user_sta1212t(examId):
         if test_res is None:
             new_test_res = ResultsExam(
                     user_id=token_data['id'], 
-                    time_passage=12)
+                    time_passage=data['timeLeft'])
             session.add(new_test_res)
-
+            session.flush()
             for item in data['ans']:
                 new_ans = ExamAnswers(
-                    exam_id = examId,
+                    exam_id = new_test_res.id,
                     id_questions = item['ans_id'],
                     user_answer = item['ans_choice'],
                     correct_answer = item['ans_correct']
@@ -521,6 +518,80 @@ def update_user_sta1212t(examId):
         return jsonify({"error": str(e)}), 500
     finally:
         session.close()
+
+#* Получение статистики пользователя (Экзамен)
+@user_bp.route('/get_all_exam', methods=['GET'])
+@token_required
+def get_all_exam():
+    session = Session()
+    try:
+        token = request.headers.get('Authorization')
+        token_data = decode_token(token)
+
+        count_ticket = session.query(ResultsExam).filter_by(user_id=token_data['id']).all()
+        response = []
+        for (index_global, tick) in enumerate(count_ticket):
+            res = session.query(ExamAnswers).filter_by(exam_id=tick.id).all()
+            if not res is None:
+                corr_quest = []
+                for (index, item) in enumerate(res):
+                    corr_quest.append({
+                        'ans_id': index,
+                        'ans_correct': item.correct_answer,
+                        'ans_choice': item.user_answer
+                        })
+                def calculate_correct_percentage(answers: list) -> float:
+                    if not answers:
+                        return 0.0 
+                    
+                    correct_count = sum(1 for ans in answers if ans["ans_correct"])
+                    total_count = len(answers)
+                    
+                    return (correct_count / total_count) * 100
+                
+                percentage = calculate_correct_percentage(corr_quest)
+                response.append({
+                    'id': index_global+1,
+                    'tickId': tick.id,
+                    'ans': corr_quest,
+                    'percentages': int(percentage),
+                    'timeLeft': tick.time_passage,
+                    'dateLeft': tick.date_passage
+                })
+
+        return jsonify({"ans": response}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+#* Получение отдельного билета пройденного экзамена
+@user_bp.route('/get_exam_one_ticket_user_ans/<int:exam_id>', methods=['GET'])
+@token_required
+def get_exam_one_ticket_user_ans(exam_id):
+    session = Session()
+    try:
+        token = request.headers.get('Authorization')
+        token_data = decode_token(token)
+        res = session.query(ResultsExam).filter_by(user_id=token_data['id'], id=exam_id).first()
+        corr_quest = []
+        if not res is None:
+            res_ans = session.query(ExamAnswers).filter_by(exam_id=res.id).all()
+            if not res_ans is None:
+                for (index, item) in enumerate(res_ans):
+                    corr_quest.append({
+                        'ans_id': index,
+                        'ans_correct': item.correct_answer,
+                        'ans_choice': item.user_answer
+                        })
+
+            # corr_quest = ast.literal_eval(res.correct_questions)
+        return jsonify({"message": corr_quest}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
 
 #! LearningController – доступ к теоретическим материалам и разбору ошибок;
 
