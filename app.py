@@ -10,7 +10,7 @@ from utils.limiter import limiter
 app = Flask(__name__)
 CORS(app)
 
-limiter.init_app(app)
+# limiter.init_app(app)
 
 app.config.from_object(Config)
 

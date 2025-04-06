@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey,Time, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, Time, DateTime, Boolean
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, scoped_session
 from datetime import datetime
 from config import Config
@@ -107,5 +107,23 @@ class TicketQuestion(Base):
 
     ticket = relationship("Ticket")
     question = relationship("Question")
+
+class ResultsExam(Base):
+    __tablename__ = "result_exam"
+
+    id = Column(Integer, primary_key=True, unique=True, nullable=False)
+    user_id = Column(Integer)
+    date_passage = Column(DateTime, default=datetime.now)
+    time_passage = Column(Integer)
+
+class ExamAnswers(Base):
+    __tablename__ = "answer_exam"
+
+    id = Column(Integer, primary_key=True, unique=True, nullable=False)
+    exam_id = Column(Integer)
+    id_questions = Column(Integer)
+    user_answer = Column(String)
+    correct_answer = Column(Boolean)
+
 
 Base.metadata.create_all(engine)
