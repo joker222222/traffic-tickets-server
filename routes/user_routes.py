@@ -2,21 +2,12 @@ from datetime import datetime, timedelta
 from models import User, Role, Ticket, Question, TestResult, SupportChat, Like, News, TicketQuestion, ResultsExam, ExamAnswers, Session
 from flask import request, jsonify, abort, Blueprint, send_file
 from utils.jwt_utils import token_required, generate_token, decode_token
-import logging
-from marshmallow import ValidationError
-from schema.schemes import LoginSchema, KeyAddSchema, CheckVersionProgramScheme
-from utils.time_zone import get_now_time, check_time
-from utils.limiter import limiter
-import time
 import os
 from config import Config
-import json
-from flask_cors import cross_origin
 import ast
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import func
-
-logging.basicConfig(filename='log/app.log', level=logging.INFO)
+from sqlalchemy import desc
 
 user_bp = Blueprint('user_router', __name__)
 
@@ -348,7 +339,7 @@ def add_new():
 def get_all_news_unauth():
     session = Session()
     try:
-        count_news = session.query(News).all()
+        count_news = session.query(News).order_by(desc(News.id)).all()
         response = []
         for i in count_news:
             response.append({
@@ -375,7 +366,7 @@ def get_all_news_authorized():
     try:
         token = request.headers.get('Authorization')
         token_data = decode_token(token)
-        count_news = session.query(News).all()
+        count_news = session.query(News).order_by(desc(News.id)).all()
         response = []
         for i in count_news:
             react_user = session.query(Like).filter_by(news_id=i.id, user_id=token_data['id']).first()
