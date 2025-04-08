@@ -8,6 +8,7 @@ import ast
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import func
 from sqlalchemy import desc
+import locale
 
 user_bp = Blueprint('user_router', __name__)
 
@@ -541,13 +542,17 @@ def get_all_exam():
                     return (correct_count / total_count) * 100
                 
                 percentage = calculate_correct_percentage(corr_quest)
+
+                locale.setlocale(locale.LC_TIME, 'Russian_Russia.1251')
+                formatted_date = tick.date_passage.strftime("%d %B %Y")
+
                 response.append({
                     'id': index_global+1,
                     'tickId': tick.id,
                     'ans': corr_quest,
                     'percentages': int(percentage),
                     'timeLeft': tick.time_passage,
-                    'dateLeft': tick.date_passage
+                    'dateLeft': formatted_date
                 })
 
         return jsonify({"ans": response}), 200
