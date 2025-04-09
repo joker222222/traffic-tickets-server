@@ -589,6 +589,29 @@ def get_exam_one_ticket_user_ans(exam_id):
         session.close()
 
 
+#* Получение билетов для марафона
+@user_bp.route('/get_marathon', methods=['GET'])
+def get_marathon():
+    session = Session()
+    try:
+        res = session.query(Question).all()
+        response = []
+        if not res is None:
+            for (index, item) in enumerate(res):
+                response.append({
+                'img': item.image,
+                'questionId': index+1,
+                'id': item.id,
+                'question': item.text,
+                'answers': item.answer_options.split('>;')
+            })
+
+        return jsonify({"questions": response}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
 #! LearningController – доступ к теоретическим материалам и разбору ошибок;
 
 

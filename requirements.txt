@@ -1,7 +1,6 @@
 Flask==3.1.0
 Flask_Cors==5.0.0
 PyJWT==2.10.1
-pytz==2024.2
 Requests==2.32.3
 SQLAlchemy==2.0.36
 waitress==3.0.2

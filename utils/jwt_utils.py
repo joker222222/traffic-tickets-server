@@ -3,7 +3,6 @@ from config import Config
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask import request, jsonify
-import pytz  # Для работы с временными зонами
 
 # Создание токена для входа пользователя
 def encode_token(payload):
