@@ -16,6 +16,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, unique=True, nullable=False)
     name = Column(String)
+    avatar = Column(String, default='/src/assets/empty.jpg')
     email = Column(String, unique=True)
     password = Column(String)
     registration_date = Column(DateTime, default=datetime.now)

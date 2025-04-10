@@ -84,8 +84,13 @@ def profile():
         user = session.query(User).filter_by(id=token_data['id']).first()
         if user is None:
             return jsonify({"error": "No found user"}), 400
-        
-        return jsonify({"name": user.name}), 200
+        response = {
+            'name': user.name,
+            'email': user.email,
+            'password': user.password,
+            'avatar': user.avatar
+        }
+        return jsonify({"data": response}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
