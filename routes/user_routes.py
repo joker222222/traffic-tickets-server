@@ -133,9 +133,9 @@ def admin_get_user():
         user = session.query(User).filter_by(id=token_data['id']).first()
         if user is None:
             return jsonify({"error": "No found user"}), 400
-        user_role = session.query(Role).filter_by(id=user.id).first()
+        user_role = session.query(Role).filter_by(id=user.role_id).first()
         if user_role.name != 'admin':
-            return jsonify({"error": "No found user"}), 400
+            return jsonify({"error": "No have admin"}), 400
         response = []
         users = session.query(User).filter(User.id != user.id).all()
         for us in users:
@@ -156,24 +156,26 @@ def admin_get_user():
         session.close()
    
 #* Администратор изменение роли пользователю
-@user_bp.route('/admin-change-role/<int:id_user>/<int:id_role>', methods=['PUT'])
+@user_bp.route('/admin-change-role/<int:id_user>', methods=['PUT'])
 @token_required
-def admin_change_role(id_user, id_role):
+def admin_change_role(id_user):
     session = Session()
     try:
         token_data = decode_token(request.headers.get('Authorization'))
+
         user = session.query(User).filter_by(id=token_data['id']).first()
         if user is None:
             return jsonify({"error": "No found user"}), 400
-        user_role = session.query(Role).filter_by(id=user.id).first()
+        
+        user_role = session.query(Role).filter_by(id=user.role_id).first()
         if user_role.name != 'admin':
-            return jsonify({"error": "No found user"}), 400
+            return jsonify({"error": "No have admin"}), 400
         
         user_get = session.query(User).filter_by(id=id_user).first()
         if not user_get:
             return jsonify({"error": "No found user"}), 400
         if user_get.id == user.id:
-            return jsonify({"error": "No found user"}), 400
+            return jsonify({"error": "No change role myself"}), 400
 
         if user_get.role_id == 1:
             user_get.role_id = 2
